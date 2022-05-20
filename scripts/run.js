@@ -18,11 +18,16 @@ const main = async () => {
   );
 
   //send wave
-  let waveTxn = await waveContract.wave("A f'n message"); //send a new wave by calling the function
-  await waveTxn.wait(); //wait for the transaction to be mined on the blockchain
+  let waveTxn1 = await waveContract.wave("A f'n message"); //send a new wave by calling the function
+  await waveTxn1.wait(); //wait for the transaction to be mined on the blockchain
+
+  //send another wave
+  let waveTxn2 = await waveContract.wave("Another f'n message"); //send a new wave by calling the function
+  await waveTxn2.wait(); //wait for the transaction to be mined on the blockchain
 
   //get contract balance after transaction
   contractBalance = hre.ethers.provider.getBalance(waveContract.address);
+  console.log("contract balance", hre.ethers.utils.formatEther(contractBalance));
 
   let allWaves = await waveContract.getAllWaves();
   console.log(allWaves);

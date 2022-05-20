@@ -6,6 +6,7 @@ import "hardhat/console.sol";
 
 contract WavePortal {
     uint256 totalWaves;
+    uint256 private seed;
 
     event NewWave(address indexed from, uint256 timestamp, string message);
     /*
@@ -22,7 +23,15 @@ contract WavePortal {
      * This is what lets me hold all the waves anyone ever sends to me!
      */
      Wave[] waves;
+     /*
+     * This is an address => uint mapping, meaning I can associate an address with a number!
+     * In this case, I'll be storing the address with the last time the user waved at us.
+     */
+     mapping(address => uint256) public lastWavedAt;
     constructor() payable {
+        //initial seed %100 makes sure the seed is between 0-99
+        seed = (block.timestamp + block.difficulty) % 100;
+
         console.log("nth smart contract");
     }
     /*
@@ -30,6 +39,15 @@ contract WavePortal {
      * sends us from the frontend!
      */
     function wave (string memory _message) public {
+        /*
+         * We need to make sure the current timestamp is at least 15-minutes bigger than the last timestamp we stored
+         */
+        require(lastWavedAt[msg.sender] + 15 minutes < block.timestamp, "wait 15min");
+         /*
+         * Update the current timestamp we have for the user
+         */
+        lastWavedAt[msg.sender] = block.timestamp;
+        
         totalWaves += 1;
         console.log(msg.sender, " mf has waved with ", _message);
         /*
@@ -37,13 +55,21 @@ contract WavePortal {
          */
          waves.push(Wave(msg.sender, _message, block.timestamp));
 
+         //generate new seed for user who waves
+         seed = (block.timestamp + block.difficulty) % 100;
+         console.log("Random number generated", seed);
+
+        //50% chance of winning
+         if(seed <= 50){
+             console.log("%s won", msg.sender);
+
+             uint256 prizeAmount = 0.0001 ether;
+             require(prizeAmount <= address(this).balance);
+             (bool success, ) =(msg.sender).call{value: prizeAmount}("");
+             require(success, "Failed to withdraw funds from contract");
+         }
+
          emit NewWave(msg.sender, block.timestamp, _message);
-         uint256 prizeAmount = 0.0001 ether;
-         //Trying to send more ether than the account has
-         //require is like a fancy if statement
-         require(prizeAmount <= address(this).balance); 
-         (bool success, ) = (msg.sender).call{value: prizeAmount}("");
-         require(success, "Failed to withdraw ether from account");
     }
     /*
      * I added a function getAllWaves which will return the struct array, waves, to us.
